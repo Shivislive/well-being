@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0; url='login.html'" />
+  <title>Medical Records App</title>
+</head>
+<body>
+  <p>Redirecting to <a href="login.html">Login</a>...</p>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - Medical Records App</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h2>Login</h2>
+  <form id="loginForm">
+    <label for="username">Username:</label>
+    <input type="text" id="username" required><br>
+    <label for="password">Password:</label>
+    <input type="password" id="password" required><br>
+    <button type="submit">Login</button>
+  </form>
+  <script src="data.js"></script>
+  <script src="login.js"></script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Doctor Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h2>Doctor Dashboard</h2>
+  <button id="logoutBtn">Logout</button>
+  <h3>Add Record</h3>
+  <form id="recordForm">
+    <label for="patient">Patient:</label>
+    <input type="text" id="patient" required><br>
+    <label for="diagnosis">Diagnosis:</label>
+    <input type="text" id="diagnosis" required><br>
+    <label for="date">Date:</label>
+    <input type="date" id="date" required><br>
+    <button type="submit">Add Record</button>
+  </form>
+  <h3>All Records</h3>
+  <table id="recordsTable" border="1">
+    <tr><th>ID</th><th>Patient</th><th>Diagnosis</th><th>Date</th></tr>
+  </table>
+  <script src="doctor.js"></script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Patient Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h2>Patient Dashboard</h2>
+  <button id="logoutBtn">Logout</button>
+  <h3>Your Records</h3>
+  <table id="patientRecordsTable" border="1">
+    <tr><th>ID</th><th>Doctor</th><th>Diagnosis</th><th>Date</th></tr>
+  </table>
+  <script src="patient.js"></script>
+</body>
+</html>
+const users = [
+  { username: "doctor1", password: "pass", role: "doctor" },
+  { username: "patient1", password: "pass", role: "patient" }
+];
+
+const records = [
+  { id: 1, patient: "patient1", doctor: "doctor1", diagnosis: "Flu", date: "2025-01-01" }
+];
+
+// Initialize localStorage data if not already present
+if (!localStorage.getItem("users")) {
+  localStorage.setItem("users", JSON.stringify(users));
+}
+if (!localStorage.getItem("records")) {
+  localStorage.setItem("records", JSON.stringify(records));
+}
+document.getElementById("loginForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+  const users = JSON.parse(localStorage.getItem("users")) || [];
+  const user = users.find(u => u.username === username && u.password === password);
+  if (user) {
+    const userData = { username: user.username, role: user.role };
+    localStorage.setItem("currentUser", JSON.stringify(userData));
+    // Redirect based on role
+    if (user.role === "doctor") {
+      window.location.href = "doctor_dashboard.html";
+    } else if (user.role === "patient") {
+      window.location.href = "patient_dashboard.html";
+    }
+  } else {
+    alert("Invalid credentials");
+  }
+});
+window.onload = function() {
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  if (!currentUser || currentUser.role !== "doctor") {
+    alert("Access denied");
+    window.location.href = "login.html";
+    return;
+  }
+
+  document.getElementById("logoutBtn").addEventListener("click", function() {
+    localStorage.removeItem("currentUser");
+    window.location.href = "login.html";
+  });
+
+  function loadRecords() {
+    const records = JSON.parse(localStorage.getItem("records")) || [];
+    const table = document.getElementById("recordsTable");
+    // Reset table content (keep headers)
+    table.innerHTML = "<tr><th>ID</th><th>Patient</th><th>Diagnosis</th><th>Date</th></tr>";
+    records.forEach(rec => {
+      const row = table.insertRow();
+      row.insertCell(0).innerText = rec.id;
+      row.insertCell(1).innerText = rec.patient;
+      row.insertCell(2).innerText = rec.diagnosis;
+      row.insertCell(3).innerText = rec.date;
+    });
+  }
+
+  loadRecords();
+
+  document.getElementById("recordForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const patient = document.getElementById("patient").value;
+    const diagnosis = document.getElementById("diagnosis").value;
+    const date = document.getElementById("date").value;
+    const records = JSON.parse(localStorage.getItem("records")) || [];
+    const id = records.length ? records[records.length - 1].id + 1 : 1;
+    const newRecord = { id, patient, doctor: currentUser.username, diagnosis, date };
+    records.push(newRecord);
+    localStorage.setItem("records", JSON.stringify(records));
+    loadRecords();
+    this.reset();
+  });
+};
+window.onload = function() {
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  if (!currentUser || currentUser.role !== "patient") {
+    alert("Access denied");
+    window.location.href = "login.html";
+    return;
+  }
+
+  document.getElementById("logoutBtn").addEventListener("click", function() {
+    localStorage.removeItem("currentUser");
+    window.location.href = "login.html";
+  });
+
+  const records = JSON.parse(localStorage.getItem("records")) || [];
+  const table = document.getElementById("patientRecordsTable");
+  table.innerHTML = "<tr><th>ID</th><th>Doctor</th><th>Diagnosis</th><th>Date</th></tr>";
+  records
+    .filter(rec => rec.patient === currentUser.username)
+    .forEach(rec => {
+      const row = table.insertRow();
+      row.insertCell(0).innerText = rec.id;
+      row.insertCell(1).innerText = rec.doctor;
+      row.insertCell(2).innerText = rec.diagnosis;
+      row.insertCell(3).innerText = rec.date;
+    });
+};
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+}
+
+h2, h3 {
+  color: #333;
+}
+
+form {
+  margin-bottom: 20px;
+}
+
+label {
+  display: inline-block;
+  width: 80px;
+}
+
+input {
+  margin-bottom: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 8px;
+  text-align: left;
+  border: 1px solid #ccc;
+}
+backend/
+├── app.js
+└── routes/
+    ├── auth.js
+    ├── records.js
+    └── users.js
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const authRouter = require('./routes/auth');
+const recordsRouter = require('./routes/records');
+const usersRouter = require('./routes/users');
+
+const app = express();
+const PORT = 3000;
+
+app.use(cors());
+app.use(bodyParser.json());
+
+app.use('/login', authRouter);
+app.use('/records', recordsRouter);
+app.use('/users', usersRouter);
+
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
+const express = require('express');
+const router = express.Router();
+
+// Hardcoded users array for demo (matching front-end credentials)
+const users = [
+  { username: "doctor1", password: "pass", role: "doctor" },
+  { username: "patient1", password: "pass", role: "patient" }
+];
+
+router.post('/', (req, res) => {
+  const { username, password } = req.body;
+  const user = users.find(u => u.username === username && u.password === password);
+  if (user) {
+    res.json({ username: user.username, role: user.role });
+  } else {
+    res.status(401).json({ message: "Invalid credentials" });
+  }
+});
+
+module.exports = router;
+const express = require('express');
+const router = express.Router();
+
+// In-memory records array (initial sample record)
+const records = [
+  { id: 1, patient: "patient1", doctor: "doctor1", diagnosis: "Flu", date: "2025-01-01" }
+];
+
+router.get('/', (req, res) => {
+  res.json(records);
+});
+
+router.post('/', (req, res) => {
+  const { patient, doctor, diagnosis, date } = req.body;
+  const id = records.length ? records[records.length - 1].id + 1 : 1;
+  const newRecord = { id, patient, doctor, diagnosis, date };
+  records.push(newRecord);
+  res.json(newRecord);
+});
+
+module.exports = router;
+const express = require('express');
+const router = express.Router();
+
+const users = [
+  { username: "doctor1", role: "doctor" },
+  { username: "patient1", role: "patient" }
+];
+
+router.get('/', (req, res) => {
+  res.json(users);
+});
+
+module.exports = router;
+{
+  "name": "medical-records-backend",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5"
+  }
+}
+# Medical Records Web App - Starter Template
+
+This project is a simple starter template for a Medical Records web application. It includes:
+
+- A **frontend** (static HTML/JS/CSS) that uses browser localStorage to simulate user login and record management.
+- A **backend** (Node.js/Express) with placeholder API endpoints (`/login`, `/records`, `/users`) and hardcoded data.
+
+## Frontend
+
+- **Setup:** No build process required. Simply open `index.html` in a web browser.
+- **Usage:** 
+  - On first load, sample users and records are initialized in browser storage.
+  - Login using the credentials below:
+    - Doctor account: **username:** `doctor1`, **password:** `pass`
+    - Patient account: **username:** `patient1`, **password:** `pass`
+  - Doctors are redirected to the **Doctor Dashboard**, where they can view/add records.
+  - Patients are redirected to the **Patient Dashboard**, where they can view only their own records.
+- **Note:** The frontend currently does *not* call the backend API; it operates entirely in the browser. To reset data, clear the browser's localStorage for this site.
+
+## Backend
+
+- **Requirements:** Node.js installed.
+- **Setup:** 
+  1. Open a terminal and navigate to the `backend/` directory.
+  2. Run `npm install` to install dependencies (`express`, `body-parser`, `cors`).
+  3. Run `npm start` (or `node app.js`) to start the server on **http://localhost:3000**.
+- **API Endpoints:** (No real database connection; data is in-memory)
+  - `POST /login` – expects JSON `{username, password}`, returns `{username, role}` or 401 error.
+  - `GET /users` – returns a list of user objects.
+  - `GET /records` – returns all medical records.
+  - `POST /records` – expects JSON `{patient, doctor, diagnosis, date}`, adds a record and returns it.
+- **Testing:** You can use tools like Postman or `curl` to test the endpoints (e.g., `POST http://localhost:3000/login` with a JSON body).
+
+## Future Improvements
+
+- **Database Integration:** Replace in-memory data with a real database (e.g., MongoDB, MySQL).
+- **Authentication:** Add secure authentication (JWT tokens, password hashing).
+- **Form Validation:** Validate user input on both frontend and backend.
+- **Error Handling:** Improve error messages and handling on the backend.
+- **User Management:** Support user registration and profile management.
+- **Frontend Enhancements:** Use a framework (React/Vue) or improve UI/UX.
+- **Deployment:** Deploy the backend (e.g., Heroku, AWS) and frontend (e.g., GitHub Pages).
